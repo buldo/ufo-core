@@ -127,9 +127,9 @@ ufo_kiro_messenger_disconnect (UfoMessenger *msger)
 static gboolean
 ufo_kiro_messenger_send_callback (struct KiroMessage *msg, gpointer user_data)
 {
+    msg->message_handled = TRUE;
     gboolean *flag = (gboolean *)user_data;
     *flag = TRUE;
-    msg->message_handled = TRUE;
     return FALSE; // automatically deregister
 }
 
@@ -137,13 +137,17 @@ ufo_kiro_messenger_send_callback (struct KiroMessage *msg, gpointer user_data)
 static gboolean
 ufo_kiro_messenger_recv_callback (struct KiroMessage *msg, gpointer user_data)
 {
-    UfoMessage *msg_out = (UfoMessage *)user_data;
+    UfoMessage *msg_out = g_malloc (sizeof (UfoMessage));
     msg_out->type = msg->msg;
     msg_out->data_size = msg->size;
     msg_out->data = msg->payload;
 
     msg->payload = NULL;
     msg->message_handled = TRUE;
+
+    UfoMessage **ret = (UfoMessage **)user_data;
+    *ret = msg_out;
+
     return FALSE; // automatically deregister
 }
 
@@ -169,8 +173,12 @@ ufo_kiro_messenger_send_blocking (UfoMessenger *msger,
     gboolean send_done = FALSE;
     kiro_messenger_add_send_callback (priv->km, ufo_kiro_messenger_send_callback, &send_done);
 
-    UfoMessage *response = g_malloc0 (sizeof (UfoMessage));
-    gulong recv_id = kiro_messenger_add_receive_callback (priv->km, ufo_kiro_messenger_recv_callback, response);
+    UfoMessage *response = NULL;
+    gulong recv_id = 0;
+    if (request_msg->type != UFO_MESSAGE_ACK) {
+        // We will get a response. Register a callback for it
+        recv_id = kiro_messenger_add_receive_callback (priv->km, ufo_kiro_messenger_recv_callback, &response);
+    }
 
     struct KiroMessage msg;
     msg.msg = request_msg->type;
@@ -188,8 +196,10 @@ ufo_kiro_messenger_send_blocking (UfoMessenger *msger,
         return NULL;
     }
 
-    //receive callback will automatically fill in the 'response' message for us
-    while (!response->data) {};
+    if (request_msg->type != UFO_MESSAGE_ACK) {
+        //receive callback will automatically fill in the 'response' message for us
+        while (!response) {};
+    }
 
     return response;
 }
@@ -207,11 +217,11 @@ ufo_kiro_messenger_recv_blocking (UfoMessenger *msger,
 {
     UfoKiroMessengerPrivate *priv = UFO_KIRO_MESSENGER_GET_PRIVATE (msger);
 
-    UfoMessage *result = g_malloc0 (sizeof (UfoMessage));
-    kiro_messenger_add_receive_callback (priv->km, ufo_kiro_messenger_recv_callback, result);
+    UfoMessage *result = NULL;
+    kiro_messenger_add_receive_callback (priv->km, ufo_kiro_messenger_recv_callback, &result);
 
     //receive callback will automatically fill in the 'result' message for us
-    while (!result->data) {};
+    while (!result) {};
 
     return result;
 }

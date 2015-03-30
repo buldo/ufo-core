@@ -65,6 +65,29 @@ AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
 ])
 AM_CONDITIONAL([WITH_MPI], [test x"$with_mpi" = xyes])
 
+dnl ************
+dnl *** KIRO ***
+dnl ************
+
+# If --with-kiro=yes is used, try to find KIRO InfiniBand and fail if it isn't found.
+# If --with-mpi=no is used, don't build with KIRO InfiniBand support.
+AC_ARG_WITH(kiro, [AS_HELP_STRING([--with-kiro],
+    [locate KIRO InfiniBand library and build with support for InfiniBand
+     communication between nodes. Default: no])
+],,[with_kiro=yes])
+#
+use_kiro=no
+if test x"with_kiro" = xyes; then
+    PKG_CHECK_MODULES([KIRO], [kiro >= 1.1])
+    if test "$KIRO" != :; then
+        use_kiro=yes
+    else
+        AC_FAILURE([KIRO InfiniBand support requested but KIRO library could
+                    not be found])
+    fi
+fi
+AM_CONDITIONAL([WITH_KIRO], [test x"$use_kiro" = xyes]) 
+
 # Checks for programs.
 AC_PROG_CC_C99
 AC_PROG_INSTALL

@@ -27,5 +27,6 @@ void test_add_profiler (void);
 void test_add_remote_node (void);
 void test_add_mpi_remote_node (void);
 void test_add_zmq_messenger (void);
+void test_add_kiro_messenger (void);
 
 #endif

@@ -58,6 +58,9 @@ int main(int argc, char *argv[])
     test_add_remote_node ();
 #endif
 
+    test_add_kiro_messenger ();
+    test_add_remote_node ();
+
     g_test_run();
 
 #ifdef WITH_MPI
