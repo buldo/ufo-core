@@ -192,7 +192,8 @@ ufo_kiro_messenger_send_blocking (UfoMessenger *msger,
         g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_ERROR,
                      "Failed to send message to '%s'", priv->remote_addr);
         kiro_messenger_remove_receive_callback (priv->km, recv_id);
-        g_free (response);
+        if (response)
+            g_free (response);
         return NULL;
     }
 
