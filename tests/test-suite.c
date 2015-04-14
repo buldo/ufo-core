@@ -58,8 +58,10 @@ int main(int argc, char *argv[])
     test_add_remote_node ();
 #endif
 
+#ifdef WITH_KIRO
     test_add_kiro_messenger ();
     test_add_remote_node ();
+#endif
 
     g_test_run();
 
