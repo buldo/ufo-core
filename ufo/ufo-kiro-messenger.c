@@ -32,6 +32,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoKiroMessenger, ufo_kiro_messenger, G_TYPE_OBJECT,
 struct _UfoKiroMessengerPrivate {
     KiroMessenger *km;
     gchar *remote_addr;
+    gboolean ready;
     UfoMessengerRole role;
 };
 
@@ -108,6 +109,8 @@ ufo_kiro_messenger_connect (UfoMessenger *msger,
                      "Failed to connect to '%s'", priv->remote_addr);
         g_free (priv->remote_addr);
     }
+    else
+        priv->ready = TRUE;
 
     g_free (addr);
     g_free (port);
@@ -120,6 +123,7 @@ ufo_kiro_messenger_disconnect (UfoMessenger *msger)
     UfoKiroMessengerPrivate *priv = UFO_KIRO_MESSENGER_GET_PRIVATE (msger);
 
     kiro_messenger_stop (priv->km);
+    priv->ready = FALSE;
     return;
 }
 
@@ -166,6 +170,12 @@ ufo_kiro_messenger_send_blocking (UfoMessenger *msger,
                                  GError **error)
 {
     UfoKiroMessengerPrivate *priv = UFO_KIRO_MESSENGER_GET_PRIVATE (msger);
+
+    if (!priv->ready) {
+        g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_ERROR,
+                     "Messenger is not connected");
+        return NULL;
+    }
 
     if (request_msg->type == UFO_MESSAGE_ACK && priv->role == UFO_MESSENGER_CLIENT)
         g_critical ("Clients can't send ACK messages");
@@ -217,6 +227,12 @@ ufo_kiro_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
 {
     UfoKiroMessengerPrivate *priv = UFO_KIRO_MESSENGER_GET_PRIVATE (msger);
+
+    if (!priv->ready) {
+        g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_ERROR,
+                     "Messenger is not connected");
+        return NULL;
+    }
 
     UfoMessage *result = NULL;
     kiro_messenger_add_receive_callback (priv->km, ufo_kiro_messenger_recv_callback, &result);
@@ -272,4 +288,5 @@ ufo_kiro_messenger_init (UfoKiroMessenger *msger)
 {
     UfoKiroMessengerPrivate *priv = UFO_KIRO_MESSENGER_GET_PRIVATE (msger);
     priv->km = kiro_messenger_new ();
+    priv->ready = FALSE;
 }
