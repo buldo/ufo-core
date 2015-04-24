@@ -96,10 +96,10 @@ libufo_la_LIBADD += $(PYTHON_LIBS)
 endif
 
 if WITH_KIRO
-ufo_headers =+ ufo-kiro-messenger.h
+ufo_headers += ufo-kiro-messenger.h
 libufo_la_SOURCES += ufo-kiro-messenger.c
 libufo_la_LIBADD += $(KIRO_LIBS)
-AM_CPPFLAGS += $(KIRO_CFLAGS)
+AM_CPPFLAGS += -DWITH_KIRO $(KIRO_CFLAGS)
 endif
 
 ufoincludedir = ${includedir}/ufo-@VMAJ@/ufo
